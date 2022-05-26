@@ -12,6 +12,7 @@
   "dependencies": {
     "axios": "^0.27.2",
     "i": "^0.3.7",
+    "nodemon": "^2.0.16",
     "socket.io": "^4.5.1",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.4.0"
   }
