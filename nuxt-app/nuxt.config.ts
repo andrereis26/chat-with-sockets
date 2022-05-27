@@ -4,5 +4,15 @@ import { defineNuxtConfig } from 'nuxt'
 export default defineNuxtConfig({
     typescript: {
         shim: false
+    },
+    css: [
+        '@/assets/css/main.css',
+    ],
+    build: {
+        postcss: {
+            postcssOptions: require('./postcss.config.js'),
+        },
     }
 })
+
+

@@ -1,5 +1,5 @@
 <template>
   <div>
-    <NuxtLink to="/about">About</NuxtLink>
+    <MySidebar />
   </div>
 </template>
