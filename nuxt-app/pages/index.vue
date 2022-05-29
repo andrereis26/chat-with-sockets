@@ -1,7 +1,6 @@
 
 <template>
-  <div>
-      <Navbar />
-      <Sidebar />
-  </div>
+  <Navbar />
+  <!-- <Sidebar /> -->
+  <Chat />
 </template>
