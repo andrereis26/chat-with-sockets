@@ -1,5 +1,7 @@
+
 <template>
   <div>
-    <MySidebar />
+      <Navbar />
+      <Sidebar />
   </div>
 </template>
