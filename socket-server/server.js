@@ -21,12 +21,17 @@ var usersTyping = []
 io.on("connection", (socket) => {
     console.log("a user connected");
 
-    // gen id and sends
-    let newId = uuid.v4();
-    io.emit('user id', newId);
+    // handle to when user is ready to receive data
+    socket.on('ready to receive', (userName) => {
+        console.log("i amready");
+        // gen id and sends
+        let newId = uuid.v4();
+        io.emit('user id', newId);
 
-    // sends the messages to load
-    io.emit('load messages', messages);
+        // sends the messages to load
+        io.emit('load messages', messages);
+    });
+
 
     // handle the chat message and send it to the other users
     socket.on('chat message', (msg) => {
@@ -71,12 +76,12 @@ io.on("connection", (socket) => {
 
     socket.conn.on("close", (reason) => {
         // called when the underlying connection is closed
-        
+
         // removes user from array [FIND A WAY TO KNOW WHO WAS THE USER THAT DC]
 
         // send the updated array
         io.emit('users typing', usersTyping);
-        
+
         console.log('user disconnected');
     });
 });
