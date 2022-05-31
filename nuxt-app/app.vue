@@ -32,7 +32,6 @@ onMounted(() => {
 
       // if NOT set via local storage previously
     } else {
-      console.log("teste222");
       if (document.documentElement.classList.contains("dark")) {
         document.documentElement.classList.remove("dark");
         localStorage.setItem("color-theme", "light");
@@ -45,8 +44,10 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div  id="app" class="dark:bg-gray-800">
+  <div id="app-main" class="dark:bg-gray-800">
     <!-- Markup shared across all pages, ex: NavBar -->
+    <Navbar />
+    <!-- <Sidebar /> -->
     <NuxtPage />
   </div>
 </template>

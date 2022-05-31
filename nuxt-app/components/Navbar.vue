@@ -1,4 +1,3 @@
-
 <template>
   <nav
     class="
@@ -117,9 +116,7 @@
           </svg>
         </button>
       </div>
-      <div class="hidden w-full md:block md:w-auto" id="mobile-menu">
-     
-      </div>
+      <div class="hidden w-full md:block md:w-auto" id="mobile-menu"></div>
     </div>
   </nav>
 </template>

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-#app {
+#app-main {
     height: 100vh;
   }
 
