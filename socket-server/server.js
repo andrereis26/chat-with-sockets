@@ -9,7 +9,9 @@ const app = new App();
 const io = new Server(httpServer, {
     cors: {
         origin: '*',
-    }
+    },
+    pingInterval: 10000,
+    pingTimeout: 5000,
 });
 
 io.attachApp(app);
@@ -21,12 +23,12 @@ var usersTyping = []
 io.on("connection", (socket) => {
     console.log("a user connected");
 
-    // handle to when user is ready to receive data
-    socket.on('ready to receive', (userName) => {
-        console.log("i amready");
+    // handle to when there's a new user
+    socket.on('new user', (userName) => {
         // gen id and sends
         let newId = uuid.v4();
         io.emit('user id', newId);
+        console.log(newId);
 
         // sends the messages to load
         io.emit('load messages', messages);
@@ -48,14 +50,16 @@ io.on("connection", (socket) => {
     // handle when user stop typing and sends it to the other users
     socket.on('user stopped typing', (userId) => {
 
-        // removes user from array
-        var index = usersTyping.indexOf(userId);
-        if (index !== -1) {
-            usersTyping.splice(index, 1);
-        }
+        // removes user from usersTyping array and updates all clients of it
+        removeUserFromTypingList(userId)
+    });
 
-        // semd the updated array
-        io.emit('users typing', usersTyping);
+    // handle when user says that will disconnect
+    socket.on('user disconnect', (userId) => {
+        
+        console.log("bye");
+        // removes user from usersTyping array and updates all clients of it
+        removeUserFromTypingList(userId)
     });
 
     socket.conn.once("upgrade", () => {
@@ -96,3 +100,16 @@ app.listen(7000, (token) => {
     console.log("   > Network:      http://192.168.1.64:7000/");
     console.log("   > Network (vm): http://192.168.56.1:7000/");
 });
+
+
+// functions
+function removeUserFromTypingList(userId) {
+    // removes user from array
+    var index = usersTyping.indexOf(userId);
+    if (index !== -1) {
+        usersTyping.splice(index, 1);
+    }
+
+    // semd the updated array
+    io.emit('users typing', usersTyping);
+}

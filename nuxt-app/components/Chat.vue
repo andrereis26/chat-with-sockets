@@ -97,7 +97,7 @@
         </div>
       </div>
       <!-- /End replace -->
-      <p v-for="(user, i) in usersTyping" :key="'user-' + i">
+      <p v-for="(user, i) in usersTypingExceptTheActualUser" :key="'user-' + i">
         <b>{{ user }}:</b> is typing
       </p>
       <textarea
@@ -126,6 +126,28 @@
         v-model="myMessage"
         placeholder="Your message..."
       ></textarea>
+      <button
+        type="button"
+        class="
+          text-white
+          bg-blue-700
+          hover:bg-blue-800
+          focus:ring-4 focus:ring-blue-300
+          font-medium
+          rounded-lg
+          text-sm
+          px-5
+          py-2.5
+          mr-2
+          mb-2
+          dark:bg-blue-600 dark:hover:bg-blue-700
+          focus:outline-none
+          dark:focus:ring-blue-800
+        "
+        @click="sendMessage"
+      >
+        Send
+      </button>
     </div>
   </div>
 </template> 
@@ -133,7 +155,7 @@
 <!-- script -->
 <script setup>
 import { io } from "socket.io-client";
-var socket = io("http://localhost:7000/", { autoConnect: false });
+var socket = io("http://192.168.1.64:7000", { autoConnect: false });
 
 /////////////// chat things ///////////////
 const userId = ref("");
@@ -147,6 +169,17 @@ const messageDisplay = ref(null);
 const characters =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+// computed property to filter array of users typing and remove the actual user from it
+const usersTypingExceptTheActualUser = computed(() => {
+  // removes user from array
+  var index = usersTyping.value.indexOf(userId.value);
+  if (index !== -1) {
+    usersTyping.value.splice(index, 1);
+  }
+
+  return usersTyping.value;
+});
+
 onMounted(() => {
   console.log("ttttttttt");
   // scroll chat
@@ -156,12 +189,25 @@ onMounted(() => {
   socket.connect();
 
   // send to socket server that is ready ro receive data
-  socket.emit("ready to receive", userName.value);
+  if (!localStorage.getItem("userId")) {
+    // tells the server to register a new user
+    socket.emit("new user", userName.value);
+  } else {
+    // user already exists, clear it from usersTyping list if needed
+    userId.value = localStorage.getItem("userId");
+    socket.emit("user stopped typing", userId.value);
+  }
+  socket.emit("load messages");
 });
 
 onUnmounted(() => {
   // dc from server
   socket.disconnect();
+});
+
+onBeforeUnmount(() => {
+  // send to socket server that the user is leaving
+  socket.emit("user disconnect", userId.value);
 });
 
 // send message to the socket server
@@ -216,6 +262,7 @@ socket.on("users typing", function (msg) {
 
 // handle the id that the server gens for the user
 socket.on("user id", function (msg) {
+  localStorage.setItem("userId", msg);
   userId.value = msg;
 });
 

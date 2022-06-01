@@ -1,7 +1,7 @@
 
 <template>
   <div>
-    <Chat key="chat" />
+    <Chat />
   </div>
 </template>
 <script setup>
