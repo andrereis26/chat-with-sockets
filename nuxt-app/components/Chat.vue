@@ -104,6 +104,7 @@
         @keyup.enter="sendMessage"
         @focusin="sendUserIsTyping"
         @focusout="sendUserStoppedTyping"
+        @input="sendUserIsTyping"
         class="
           resize-none
           rounded-md
@@ -155,7 +156,7 @@
 <!-- script -->
 <script setup>
 import { io } from "socket.io-client";
-var socket = io("http://192.168.1.64:7000", { autoConnect: false });
+var socket = io("http://172.18.152.198:7000", { autoConnect: false });
 
 /////////////// chat things ///////////////
 const userId = ref("");
@@ -212,7 +213,7 @@ onBeforeUnmount(() => {
 
 // send message to the socket server
 function sendMessage() {
-  if (myMessage.value.length > 1) {
+  if (myMessage.value.length != 0) {
     // checks if the username is empty
     if (userName.value == "") {
       userName.value = generateName();
@@ -232,7 +233,12 @@ function sendMessage() {
 
 // send to the socket server the info that the user is typing
 function sendUserIsTyping() {
-  socket.emit("user is typing", userId.value);
+  // check if textarea is empty
+  if (myMessage.value.length != 0) {
+    socket.emit("user is typing", userId.value);
+  } else {
+    sendUserStoppedTyping();
+  }
 }
 
 // send to the socket server the info that the user stopped typing

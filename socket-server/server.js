@@ -41,10 +41,17 @@ io.on("connection", (socket) => {
     });
 
     // handle when user starts typing and sends it to the other users
-    socket.on('user is typing', (usedId) => {
-        // add to array os user typing
-        usersTyping.push(usedId);
-        io.emit('users typing', usersTyping);
+    socket.on('user is typing', (userId) => {
+
+        // check if already exists
+        if (usersTyping.indexOf(userId) != -1) {
+            // add to array that the user is typing and sends to clients
+            usersTyping.push(userId);
+            io.emit('users typing', usersTyping);
+        } else {
+            console.log("exists");
+        }
+
     });
 
     // handle when user stop typing and sends it to the other users
@@ -56,7 +63,7 @@ io.on("connection", (socket) => {
 
     // handle when user says that will disconnect
     socket.on('user disconnect', (userId) => {
-        
+
         console.log("bye");
         // removes user from usersTyping array and updates all clients of it
         removeUserFromTypingList(userId)
