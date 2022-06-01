@@ -23,21 +23,32 @@ var usersTyping = []
 io.on("connection", (socket) => {
     console.log("a user connected");
 
-    // handle to when there's a new user
-    socket.on('new user', (userName) => {
+    // handle (with acknowledgement) to when there's a new user
+    socket.on('new user', (userName, callback) => {
         // gen id and sends
         let newId = uuid.v4();
-        io.emit('user id', newId);
-        console.log(newId);
 
-        // sends the messages to load
-        io.emit('load messages', messages);
+        // sends the user's id and messages to load
+        callback({
+            newId: newId,
+            messages: messages
+        });
+
     });
 
+    // handle (with acknowledgement) to request to load messages
+    socket.on('load messages', (userId, callback) => {
+
+        // sends the user's messages
+        callback({
+            messages: messages
+        });
+
+    });
 
     // handle the chat message and send it to the other users
-    socket.on('chat message', (msg) => {
-        io.emit('chat message', JSON.parse(msg));
+    socket.on('chat message', (user, msg) => {
+        io.emit('chat message', { user: user, message: msg });
     });
 
     // handle when user starts typing and sends it to the other users
@@ -48,8 +59,6 @@ io.on("connection", (socket) => {
             // add to array that the user is typing and sends to clients
             usersTyping.push(userId);
             io.emit('users typing', usersTyping);
-        } else {
-            console.log("exists");
         }
 
     });

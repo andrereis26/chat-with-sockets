@@ -156,7 +156,7 @@
 <!-- script -->
 <script setup>
 import { io } from "socket.io-client";
-var socket = io("http://172.18.152.198:7000", { autoConnect: false });
+var socket = io("http://localhost:7000", { autoConnect: false });
 
 /////////////// chat things ///////////////
 const userId = ref("");
@@ -182,23 +182,33 @@ const usersTypingExceptTheActualUser = computed(() => {
 });
 
 onMounted(() => {
-  console.log("ttttttttt");
   // scroll chat
   scrollChat();
 
   // manually connect to server
   socket.connect();
 
-  // send to socket server that is ready ro receive data
   if (!localStorage.getItem("userId")) {
     // tells the server to register a new user
-    socket.emit("new user", userName.value);
+    socket.emit("new user", userName.value, (response) => {
+      console.log(response);
+      // gets the id and messages from the response
+      localStorage.setItem("userId", response.newId);
+      userId.value = response.newId;
+      // TO-DO on server to load the messages as well
+      // messages.value = response.messages
+    });
   } else {
     // user already exists, clear it from usersTyping list if needed
     userId.value = localStorage.getItem("userId");
     socket.emit("user stopped typing", userId.value);
   }
-  socket.emit("load messages");
+
+  // sends to server that is ready ro receive data
+  socket.emit("load messages", userId, (response) => {
+    // TO-DO on server to load the messages as well
+    // messages.value = response.messages
+  });
 });
 
 onUnmounted(() => {
@@ -220,13 +230,7 @@ function sendMessage() {
       localStorage.setItem("username", userName.value);
     }
 
-    socket.emit(
-      "chat message",
-      JSON.stringify({
-        user: userName.value,
-        message: myMessage.value,
-      })
-    );
+    socket.emit("chat message", userName.value, myMessage.value);
     myMessage.value = "";
   }
 }
@@ -264,16 +268,6 @@ socket.on("users typing", function (msg) {
   if (msg != userName.value) {
     usersTyping.value = msg;
   }
-});
-
-// handle the id that the server gens for the user
-socket.on("user id", function (msg) {
-  localStorage.setItem("userId", msg);
-  userId.value = msg;
-});
-
-socket.on("connect", () => {
-  console.log("hello");
 });
 
 // gen random name of 6 chars
