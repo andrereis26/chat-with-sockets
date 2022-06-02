@@ -19,6 +19,7 @@ io.attachApp(app);
 // data
 var messages = []
 var usersTyping = []
+var usersOnline = []
 
 io.on("connection", (socket) => {
     console.log("a user connected");
@@ -28,10 +29,15 @@ io.on("connection", (socket) => {
         // gen id and sends
         let newId = uuid.v4();
 
+        // store socket
+        usersOnline[socket.id] = { id: newId, username: userName }
+
+
         // sends the user's id and messages to load
         callback({
             newId: newId,
-            messages: messages
+            messages: messages,
+            usersOnline: usersOnline
         });
 
     });
@@ -78,7 +84,9 @@ io.on("connection", (socket) => {
     // handle when user says that will disconnect
     socket.on('user disconnect', (userId) => {
 
-        console.log("bye");
+        // remove user from list of online users
+        usersOnline.splice(socket.id, 1);
+
         // removes user from usersTyping array and updates all clients of it
         removeUserFromTypingList(userId)
     });
@@ -103,6 +111,12 @@ io.on("connection", (socket) => {
         // called when the underlying connection is closed
 
         // removes user from array [FIND A WAY TO KNOW WHO WAS THE USER THAT DC]
+
+        // remove user from list of online users
+        usersOnline.splice(socket.id, 1);
+
+        // removes user from usersTyping array and updates all clients of it
+        removeUserFromTypingList(usersOnline[socket.id].id)
 
         // send the updated array
         io.emit('users typing', usersTyping);
@@ -131,6 +145,7 @@ function removeUserFromTypingList(userId) {
         // remove if equals
         if (usersTyping[i].id == userId) {
             usersTyping.splice(i, 1)
+            break
         }
     }
 
