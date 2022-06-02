@@ -27,7 +27,7 @@
             dark:text-white
             dark:focus:border-blue-500
           "
-          v-model="userName"
+          v-model="user.username"
           placeholder="leave it blank for random name"
           @keyup.enter="changeUsername"
         />
@@ -97,8 +97,8 @@
         </div>
       </div>
       <!-- /End replace -->
-      <p v-for="(user, i) in usersTypingExceptTheActualUser" :key="'user-' + i">
-        <b>{{ user }}:</b> is typing
+      <p v-for="(u, i) in usersTypingExceptTheActualUser" :key="'user-' + i">
+        <b>{{ u.username }}:</b> is typing
       </p>
       <textarea
         @keyup.enter="sendMessage"
@@ -159,12 +159,11 @@ import { io } from "socket.io-client";
 var socket = io("http://localhost:7000", { autoConnect: false });
 
 /////////////// chat things ///////////////
-const userId = ref("");
-const userName = ref("");
+const user = ref({ id: "", username: "" });
 const myMessage = ref("");
 const messages = ref([]);
 const usersTyping = ref([]);
-const messageDisplay = ref(null);
+const messageDisplay = ref("");
 
 // used on generateName()
 const characters =
@@ -173,9 +172,11 @@ const characters =
 // computed property to filter array of users typing and remove the actual user from it
 const usersTypingExceptTheActualUser = computed(() => {
   // removes user from array
-  var index = usersTyping.value.indexOf(userId.value);
-  if (index !== -1) {
-    usersTyping.value.splice(index, 1);
+  for (let i = 0; i < usersTyping.value.length; i++) {
+    // remove if equals
+    if (usersTyping.value[i].id == user.value.id) {
+      usersTyping.value.splice(i, 1);
+    }
   }
 
   return usersTyping.value;
@@ -188,24 +189,30 @@ onMounted(() => {
   // manually connect to server
   socket.connect();
 
+  // check if is a new user
   if (!localStorage.getItem("userId")) {
     // tells the server to register a new user
-    socket.emit("new user", userName.value, (response) => {
+    socket.emit("new user", user.value.username, (response) => {
       console.log(response);
       // gets the id and messages from the response
       localStorage.setItem("userId", response.newId);
-      userId.value = response.newId;
+      user.value.id = response.newId;
       // TO-DO on server to load the messages as well
       // messages.value = response.messages
     });
   } else {
     // user already exists, clear it from usersTyping list if needed
-    userId.value = localStorage.getItem("userId");
-    socket.emit("user stopped typing", userId.value);
+    user.value.id = localStorage.getItem("userId");
+    socket.emit("user stopped typing", user.value.id);
+
+    // check if user has a username already
+    if (localStorage.getItem("username")) {
+      user.value.username = localStorage.getItem("username");
+    }
   }
 
   // sends to server that is ready ro receive data
-  socket.emit("load messages", userId, (response) => {
+  socket.emit("load messages", user.value.id, (response) => {
     // TO-DO on server to load the messages as well
     // messages.value = response.messages
   });
@@ -218,19 +225,19 @@ onUnmounted(() => {
 
 onBeforeUnmount(() => {
   // send to socket server that the user is leaving
-  socket.emit("user disconnect", userId.value);
+  socket.emit("user disconnect", user.value.id);
 });
 
 // send message to the socket server
 function sendMessage() {
   if (myMessage.value.length != 0) {
     // checks if the username is empty
-    if (userName.value == "") {
-      userName.value = generateName();
-      localStorage.setItem("username", userName.value);
+    if (user.value.username == "") {
+      user.value.username = generateName();
+      localStorage.setItem("username", user.value.username);
     }
 
-    socket.emit("chat message", userName.value, myMessage.value);
+    socket.emit("chat message", user.value.username, myMessage.value);
     myMessage.value = "";
   }
 }
@@ -239,7 +246,7 @@ function sendMessage() {
 function sendUserIsTyping() {
   // check if textarea is empty
   if (myMessage.value.length != 0) {
-    socket.emit("user is typing", userId.value);
+    socket.emit("user is typing", user.value.id, user.value.username);
   } else {
     sendUserStoppedTyping();
   }
@@ -247,7 +254,7 @@ function sendUserIsTyping() {
 
 // send to the socket server the info that the user stopped typing
 function sendUserStoppedTyping() {
-  socket.emit("user stopped typing", userId.value);
+  socket.emit("user stopped typing", user.value.id);
 }
 
 // scrolls the chat to the last msg
@@ -265,9 +272,7 @@ socket.on("chat message", function (msg) {
 // handle to when the server updates the list of users that are typing
 socket.on("users typing", function (msg) {
   // cheks if its not related to the current user
-  if (msg != userName.value) {
-    usersTyping.value = msg;
-  }
+  usersTyping.value = msg;
 });
 
 // gen random name of 6 chars
@@ -283,18 +288,8 @@ function generateName() {
 }
 
 /////////////// username input things ///////////////
-/*I was doing the whole thing of getting and setting the username with the 
-ref thing but if I use it, while I write on the input, it will always rhow me warnings
-in the console. Idk why that happens but it's related with the v-model */
-onMounted(() => {
-  // check if user has a username already
-  if (localStorage.getItem("username")) {
-    userName.value = localStorage.getItem("username");
-  }
-});
-
 // stores the usernma on localstorage
 function changeUsername() {
-  localStorage.setItem("username", userName.value);
+  localStorage.setItem("username", user.value.username);
 }
 </script>

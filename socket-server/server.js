@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
 
     // handle (with acknowledgement) to request to load messages
     socket.on('load messages', (userId, callback) => {
-
+        // TO-DO
         // sends the user's messages
         callback({
             messages: messages
@@ -52,15 +52,20 @@ io.on("connection", (socket) => {
     });
 
     // handle when user starts typing and sends it to the other users
-    socket.on('user is typing', (userId) => {
+    socket.on('user is typing', (userId, userName) => {
 
-        // check if already exists
-        if (usersTyping.indexOf(userId) != -1) {
-            // add to array that the user is typing and sends to clients
-            usersTyping.push(userId);
-            io.emit('users typing', usersTyping);
+
+        for (let i = 0; i < usersTyping.length; i++) {
+
+            // check if already exists
+            if (usersTyping[i].id == userId) {
+                return;
+            }
         }
 
+        // add to array that the user is typing and sends it to the clients
+        usersTyping.push({ id: userId, username: userName });
+        io.emit('users typing', usersTyping);
     });
 
     // handle when user stop typing and sends it to the other users
@@ -121,9 +126,12 @@ app.listen(7000, (token) => {
 // functions
 function removeUserFromTypingList(userId) {
     // removes user from array
-    var index = usersTyping.indexOf(userId);
-    if (index !== -1) {
-        usersTyping.splice(index, 1);
+    for (let i = 0; i < usersTyping.length; i++) {
+
+        // remove if equals
+        if (usersTyping[i].id == userId) {
+            usersTyping.splice(i, 1)
+        }
     }
 
     // semd the updated array
