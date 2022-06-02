@@ -25,19 +25,25 @@ io.on("connection", (socket) => {
     console.log("a user connected");
 
     // handle (with acknowledgement) to when there's a new user
-    socket.on('new user', (userName, callback) => {
-        // gen id and sends
-        let newId = uuid.v4();
+    socket.on('user joinned', (userName, userId, callback) => {
+
+        let newId = userId;
+
+        //check if its a new user
+        if (newId == '') {
+            // gen id
+            newId = uuid.v4();
+        }
 
         // store socket
         usersOnline[socket.id] = { id: newId, username: userName }
 
-
-        // sends the user's id and messages to load
+        // sends the user's id, messages, users typing and users online
         callback({
             newId: newId,
             messages: messages,
-            usersOnline: usersOnline
+            usersOnline: usersOnline,
+            usersTyping: usersTyping
         });
 
     });
@@ -110,8 +116,6 @@ io.on("connection", (socket) => {
     socket.conn.on("close", (reason) => {
         // called when the underlying connection is closed
 
-        // removes user from array [FIND A WAY TO KNOW WHO WAS THE USER THAT DC]
-
         // remove user from list of online users
         usersOnline.splice(socket.id, 1);
 
@@ -120,6 +124,9 @@ io.on("connection", (socket) => {
 
         // send the updated array
         io.emit('users typing', usersTyping);
+
+        // updates clients of users online
+        io.emit('users online', usersOnline);
 
         console.log('user disconnected');
     });

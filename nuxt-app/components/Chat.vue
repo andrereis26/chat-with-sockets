@@ -156,13 +156,14 @@
 <!-- script -->
 <script setup>
 import { io } from "socket.io-client";
-var socket = io("http://localhost:7000", { autoConnect: false });
+var socket = io("http://192.168.1.64:7000", { autoConnect: false });
 
 /////////////// chat things ///////////////
 const user = ref({ id: "", username: "" });
 const myMessage = ref("");
 const messages = ref([]);
 const usersTyping = ref([]);
+const usersOnline = ref([]);
 const messageDisplay = ref("");
 
 // used on generateName()
@@ -192,11 +193,12 @@ onMounted(() => {
   // check if is a new user
   if (!localStorage.getItem("userId")) {
     // tells the server to register a new user
-    socket.emit("new user", user.value.username, (response) => {
-      console.log(response);
+    socket.emit("user joinned", user.value.username, "", (response) => {
       // gets the id and messages from the response
       localStorage.setItem("userId", response.newId);
       user.value.id = response.newId;
+      usersOnline.value = usersOnline;
+       usersTyping.value = response.usersTyping;
       // TO-DO on server to load the messages as well
       // messages.value = response.messages
     });
@@ -204,6 +206,20 @@ onMounted(() => {
     // user already exists, clear it from usersTyping list if needed
     user.value.id = localStorage.getItem("userId");
     socket.emit("user stopped typing", user.value.id);
+
+    // only tells the server that there's a user joining
+    socket.emit(
+      "user joinned",
+      user.value.username,
+      user.value.id,
+      (response) => {
+        // gets messages, users typing and users online from the response
+        usersOnline.value = response.usersOnline;
+        usersTyping.value = response.usersTyping;
+        // TO-DO on server to load the messages as well
+        // messages.value = response.messages
+      }
+    );
 
     // check if user has a username already
     if (localStorage.getItem("username")) {
@@ -271,8 +287,12 @@ socket.on("chat message", function (msg) {
 
 // handle to when the server updates the list of users that are typing
 socket.on("users typing", function (msg) {
-  // cheks if its not related to the current user
   usersTyping.value = msg;
+});
+
+// handle to when the server updates the list of users online
+socket.on("'users online", function (msg) {
+  usersOnline.value = msg;
 });
 
 // gen random name of 6 chars
