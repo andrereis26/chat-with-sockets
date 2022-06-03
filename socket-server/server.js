@@ -19,14 +19,13 @@ io.attachApp(app);
 // data
 var messages = []
 var usersTyping = []
-var usersOnline = []
+var usersOnline = {}
 
 io.on("connection", (socket) => {
     console.log("a user connected");
 
     // handle (with acknowledgement) to when there's a new user
     socket.on('user joinned', (userName, userId, callback) => {
-
         let newId = userId;
 
         //check if its a new user
@@ -38,12 +37,16 @@ io.on("connection", (socket) => {
         // store socket
         usersOnline[socket.id] = { id: newId, username: userName }
 
+        // updates the data from the other clients
+        io.emit('load data', usersOnlineObjToList(usersOnline));
+
         // sends the user's id, messages, users typing and users online
         callback({
             newId: newId,
+            username: userName,
             messages: messages,
-            usersOnline: usersOnline,
-            usersTyping: usersTyping
+            usersTyping: usersTyping,
+            usersOnline: usersOnlineObjToList(usersOnline)  // transforms usersOnline obj into list
         });
 
     });
@@ -87,14 +90,50 @@ io.on("connection", (socket) => {
         removeUserFromTypingList(userId)
     });
 
+    // handle when user updates username
+    socket.on('user updated username', (userId, newUsername) => {
+        // updates on usersOnline array
+        for (var key in usersOnline) {
+            // skip loop if the property is from prototype
+            if (!usersOnline.hasOwnProperty(key)) continue;
+
+            // check if its user
+            if (usersOnline[key].id == userId) {
+                usersOnline[key].username = newUsername;
+                break;
+            }
+        }
+
+        // updates on usersTyping array
+        for (let i = 0; i < usersTyping.length; i++) {
+
+            if (usersTyping[i].id == userId) {
+                usersTyping[i].userName = newUsername
+                break
+            }
+        }
+
+        // updates on messages array TO-DO
+
+        // updates all clients data
+        io.emit('load data', usersOnlineObjToList(usersOnline), usersTyping, messages);
+    });
+
     // handle when user says that will disconnect
     socket.on('user disconnect', (userId) => {
 
-        // remove user from list of online users
-        usersOnline.splice(socket.id, 1);
+        // this if prevents the server crash because of previous connected users
+        if (usersOnline[socket.id] != undefined) {
+            // removes user from usersTyping array and updates all clients of it
+            removeUserFromTypingList(userId)
+        }
 
-        // removes user from usersTyping array and updates all clients of it
-        removeUserFromTypingList(userId)
+        // remove user from list of online users
+        delete usersOnline[socket.id]
+
+        // updates the data from the other clients
+        io.emit('load data', usersOnlineObjToList(usersOnline));
+
     });
 
     socket.conn.once("upgrade", () => {
@@ -116,11 +155,14 @@ io.on("connection", (socket) => {
     socket.conn.on("close", (reason) => {
         // called when the underlying connection is closed
 
-        // remove user from list of online users
-        usersOnline.splice(socket.id, 1);
+        // this if prevents the server crash because of previous connected users
+        if (usersOnline[socket.id] != undefined) {
+            // removes user from usersTyping array and updates all clients of it
+            removeUserFromTypingList(usersOnline[socket.id].id)
+        }
 
-        // removes user from usersTyping array and updates all clients of it
-        removeUserFromTypingList(usersOnline[socket.id].id)
+        // remove user from list of online users
+        delete usersOnline[socket.id]
 
         // send the updated array
         io.emit('users typing', usersTyping);
@@ -158,4 +200,16 @@ function removeUserFromTypingList(userId) {
 
     // semd the updated array
     io.emit('users typing', usersTyping);
+}
+
+function usersOnlineObjToList(usersObj) {
+    let list = []
+    for (var key in usersObj) {
+        // skip loop if the property is from prototype
+        if (!usersObj.hasOwnProperty(key)) continue;
+
+        list.push(usersObj[key])
+    }
+
+    return list
 }

@@ -72,6 +72,13 @@
         </button>
       </div>
     </div>
+    <!-- users online -->
+    <div class="max-w-7xl mx-auto my-auto sm:px-4 lg:px-4">
+      <b>users online: </b>
+      <span v-for="(user, i) in usersOnline" :key="'user-' + i">
+        {{ user.username }} <span v-if="i != usersOnline.length - 1">,</span>
+      </span>
+    </div>
     <!-- Chat -->
     <div class="max-w-7xl mx-auto my-auto py-4 sm:px-4 lg:px-4" key="chatDiv">
       <!-- Replace with your content -->
@@ -190,15 +197,22 @@ onMounted(() => {
   // manually connect to server
   socket.connect();
 
+  // check if user has a username already
+  if (localStorage.getItem("username")) {
+    user.value.username = localStorage.getItem("username");
+  }
+
   // check if is a new user
   if (!localStorage.getItem("userId")) {
     // tells the server to register a new user
     socket.emit("user joinned", user.value.username, "", (response) => {
+      console.log(response);
+
       // gets the id and messages from the response
       localStorage.setItem("userId", response.newId);
       user.value.id = response.newId;
-      usersOnline.value = usersOnline;
-       usersTyping.value = response.usersTyping;
+      usersOnline.value = response.usersOnline;
+      usersTyping.value = response.usersTyping;
       // TO-DO on server to load the messages as well
       // messages.value = response.messages
     });
@@ -220,11 +234,6 @@ onMounted(() => {
         // messages.value = response.messages
       }
     );
-
-    // check if user has a username already
-    if (localStorage.getItem("username")) {
-      user.value.username = localStorage.getItem("username");
-    }
   }
 
   // sends to server that is ready ro receive data
@@ -291,8 +300,15 @@ socket.on("users typing", function (msg) {
 });
 
 // handle to when the server updates the list of users online
-socket.on("'users online", function (msg) {
+socket.on("users online", function (msg) {
   usersOnline.value = msg;
+});
+
+// handle to when the server updates/sends all the data
+socket.on("load data", function (newUsersOnline, newUsersTyping, newMessages) {
+  if (newUsersOnline != undefined) usersOnline.value = newUsersOnline;
+  if (newUsersTyping != undefined) usersTyping.value = newUsersTyping;
+  // if (newMessages != undefined) messages.value = newMessages;
 });
 
 // gen random name of 6 chars
@@ -311,5 +327,7 @@ function generateName() {
 // stores the usernma on localstorage
 function changeUsername() {
   localStorage.setItem("username", user.value.username);
+  console.log(user.value.username);
+  socket.emit("user updated username", user.value.id, user.value.username);
 }
 </script>
