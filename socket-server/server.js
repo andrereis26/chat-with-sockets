@@ -168,7 +168,7 @@ io.on("connection", (socket) => {
         io.emit('users typing', usersTyping);
 
         // updates clients of users online
-        io.emit('users online', usersOnline);
+        io.emit('users online', usersOnlineObjToList(usersOnline));
 
         console.log('user disconnected');
     });

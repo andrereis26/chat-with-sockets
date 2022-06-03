@@ -72,13 +72,15 @@
         </button>
       </div>
     </div>
+
     <!-- users online -->
     <div class="max-w-7xl mx-auto my-auto sm:px-4 lg:px-4">
       <b>users online: </b>
       <span v-for="(user, i) in usersOnline" :key="'user-' + i">
-        {{ user.username }} <span v-if="i != usersOnline.length - 1">,</span>
+        {{ user.username }}<span v-if="i < usersOnline.length - 1">, </span>
       </span>
     </div>
+
     <!-- Chat -->
     <div class="max-w-7xl mx-auto my-auto py-4 sm:px-4 lg:px-4" key="chatDiv">
       <!-- Replace with your content -->
@@ -104,9 +106,16 @@
         </div>
       </div>
       <!-- /End replace -->
-      <p v-for="(u, i) in usersTypingExceptTheActualUser" :key="'user-' + i">
-        <b>{{ u.username }}:</b> is typing
-      </p>
+      <span v-for="(u, i) in usersTypingExceptTheActualUser" :key="'user-' + i">
+        <b>{{ u.username }}</b>
+        <span v-if="i < usersTypingExceptTheActualUser.length - 1">, </span>
+      </span>
+      <span v-if="usersTypingExceptTheActualUser.length > 1">
+        are typing <span class="texting"></span
+      ></span>
+      <span v-else-if="usersTypingExceptTheActualUser.length == 1">
+        is typing <span class="texting"></span
+      ></span>
       <textarea
         @keyup.enter="sendMessage"
         @focusin="sendUserIsTyping"
@@ -197,17 +206,13 @@ onMounted(() => {
   // manually connect to server
   socket.connect();
 
-  // check if user has a username already
-  if (localStorage.getItem("username")) {
-    user.value.username = localStorage.getItem("username");
-  }
+  // assigns the username to the user
+  assignUsername();
 
   // check if is a new user
   if (!localStorage.getItem("userId")) {
     // tells the server to register a new user
     socket.emit("user joinned", user.value.username, "", (response) => {
-      console.log(response);
-
       // gets the id and messages from the response
       localStorage.setItem("userId", response.newId);
       user.value.id = response.newId;
@@ -257,11 +262,7 @@ onBeforeUnmount(() => {
 function sendMessage() {
   if (myMessage.value.length != 0) {
     // checks if the username is empty
-    if (user.value.username == "") {
-      user.value.username = generateName();
-      localStorage.setItem("username", user.value.username);
-    }
-
+    assignUsername();
     socket.emit("chat message", user.value.username, myMessage.value);
     myMessage.value = "";
   }
@@ -311,6 +312,22 @@ socket.on("load data", function (newUsersOnline, newUsersTyping, newMessages) {
   // if (newMessages != undefined) messages.value = newMessages;
 });
 
+// Assigns the username to the user
+function assignUsername() {
+  // checks if the username is empty
+  console.log(localStorage.getItem("username"));
+  if (
+    localStorage.getItem("username") == "" ||
+    localStorage.getItem("username") == null
+  ) {
+    user.value.username = generateName();
+    localStorage.setItem("username", user.value.username);
+  } else {
+    user.value.username = localStorage.getItem("username");
+  }
+  socket.emit("user updated username", user.value.id, user.value.username);
+}
+
 // gen random name of 6 chars
 function generateName() {
   let result = "";
@@ -319,7 +336,6 @@ function generateName() {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
 
-  console.log(result);
   return result;
 }
 
@@ -327,7 +343,6 @@ function generateName() {
 // stores the usernma on localstorage
 function changeUsername() {
   localStorage.setItem("username", user.value.username);
-  console.log(user.value.username);
   socket.emit("user updated username", user.value.id, user.value.username);
 }
 </script>
