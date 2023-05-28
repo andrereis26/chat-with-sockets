@@ -1,11 +1,10 @@
-const { App } = require("uWebSockets.js");
 const { Server } = require("socket.io");
 const { createServer } = require("http");
 const axios = require('axios');
 const uuid = require("uuid");
 
+
 const httpServer = createServer();
-const app = new App();
 const io = new Server(httpServer, {
     cors: {
         origin: '*',
@@ -14,7 +13,6 @@ const io = new Server(httpServer, {
     pingTimeout: 5000,
 });
 
-io.attachApp(app);
 
 // data
 var messages = []
@@ -174,15 +172,13 @@ io.on("connection", (socket) => {
     });
 });
 
-app.listen(7000, (token) => {
+httpServer.listen(7000, (token) => {
     if (!token) {
         console.warn("port already in use");
     }
 
     console.warn("Server is on");
-    console.log("   > Local:        http://localhost:7000/");
-    console.log("   > Network:      http://192.168.1.64:7000/");
-    console.log("   > Network (vm): http://192.168.56.1:7000/");
+
 });
 
 
